@@ -77,10 +77,13 @@ if DATABASE_URL:
     DATABASES = {
         "default": dj_database_url.parse(
             DATABASE_URL,
-            conn_max_age=60,
+            conn_max_age=0,
             ssl_require=DATABASE_URL.startswith("postgres"),
         )
     }
+    DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
+    DATABASES["default"].setdefault("OPTIONS", {})
+    DATABASES["default"]["OPTIONS"]["prepare_threshold"] = None
 else:
     DATABASES = {
         "default": {
