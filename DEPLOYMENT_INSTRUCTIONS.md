@@ -110,6 +110,19 @@ Or set `ADMIN_EMAIL` / `ADMIN_PASSWORD` and run `python manage.py seed_catalog` 
 
 ---
 
-## 6. Frontend (later)
+## 6. Frontend on Netlify + GoDaddy domain (leave Shopify)
 
-On Netlify: base directory `frontend`, env `VITE_API_URL=https://YOUR-API.onrender.com/api`. Then set Render `CLIENT_ORIGIN` to the Netlify URL.
+Deploy Netlify **before** you change GoDaddy DNS, so the shop is not offline.
+
+1. Import GitHub repo `muhammadzayanali/Rehman-Enterprises` on [Netlify](https://app.netlify.com).
+2. Base directory: `frontend` (already in `netlify.toml`).
+3. Build: `npm run build`. Publish: `dist`.
+4. Env var: `VITE_API_URL=https://rehman-enterprises.onrender.com/api`
+5. Deploy and test `https://YOUR-SITE.netlify.app`.
+6. Netlify → Domain management → Add domain (`rehmanenterprises.co` / `www`).
+7. Shopify Admin → Settings → Domains → **Disconnect** the custom domain (do not delete the Shopify store until DNS works).
+8. GoDaddy DNS: replace Shopify records with the exact A / CNAME values Netlify shows.
+9. On Render, set:
+   - `CLIENT_ORIGIN=https://www.rehmanenterprises.co`
+   - `CORS_ALLOWED_ORIGINS=https://rehmanenterprises.co,https://www.rehmanenterprises.co,http://localhost:5173`
+10. Wait for SSL (often 10–60 minutes).
