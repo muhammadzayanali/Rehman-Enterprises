@@ -72,13 +72,9 @@ export default function ProductCard({ product, eager = false }) {
         </div>
       </div>
       <Link to={productTo} className="mt-3 block">
-        <h3 className="text-[13px] font-medium md:text-sm">{product.name}</h3>
+        <h3 className="product-name text-[15px] leading-snug sm:text-base">{product.name}</h3>
         <p className={`mt-1 text-[13px] md:text-sm ${outOfStock ? "text-black/40" : "text-brand-500"}`}>
-          {outOfStock
-            ? "Out of stock"
-            : product.show_price
-              ? `$${Number(product.price).toFixed(2)}`
-              : "Inquire for price"}
+          {outOfStock ? "Out of stock" : "Inquire for price"}
         </p>
       </Link>
     </article>

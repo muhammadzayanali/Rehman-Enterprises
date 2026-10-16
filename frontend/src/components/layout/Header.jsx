@@ -193,7 +193,7 @@ export default function Header() {
                   <img src={item.image_url} alt="" className="h-full w-full object-cover" />
                 </button>
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium">{item.name}</p>
+                  <p className="product-name text-[15px] leading-snug">{item.name}</p>
                   <p className="text-xs text-black/50">{item.category}</p>
                   <button
                     type="button"
@@ -224,7 +224,7 @@ export default function Header() {
                 <li key={item.slug} className="flex gap-3">
                   <img src={item.image_url} alt="" className="h-20 w-16 object-cover" />
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium">{item.name}</p>
+                    <p className="product-name text-[15px] leading-snug">{item.name}</p>
                     <p className="mt-1 text-xs text-black/50">
                       {[item.dimensions, item.sku].filter(Boolean).join(" · ")}
                     </p>

@@ -3,11 +3,11 @@ import { X } from "lucide-react";
 import { useUi } from "../../context/UiContext.jsx";
 import { submitInquiry } from "../../api/inquiries";
 import { getErrorMessage } from "../../api/client";
-import { isValidEmail } from "../../utils/validation.js";
+import { isValidEmail, isValidPhone } from "../../utils/validation.js";
 
 export default function QuoteModal() {
   const { quoteProduct, closeQuote, showToast } = useUi();
-  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,6 +18,7 @@ export default function QuoteModal() {
     const next = {};
     if (form.name.trim().length < 2) next.name = "Please enter your name.";
     if (!isValidEmail(form.email)) next.email = "Enter a valid email address.";
+    if (!isValidPhone(form.phone)) next.phone = "Enter a WhatsApp number so we can reply.";
     if (form.message.trim().length < 8) next.message = "Please add a little more detail.";
     setFieldErrors(next);
     return Object.keys(next).length === 0;
@@ -32,10 +33,11 @@ export default function QuoteModal() {
       await submitInquiry({
         name: form.name,
         email: form.email,
+        phone: form.phone,
         message: form.message,
         product_id: quoteProduct.id || null,
       });
-      setForm({ name: "", email: "", message: "" });
+      setForm({ name: "", email: "", phone: "", message: "" });
       closeQuote();
       showToast("Inquiry sent. We will contact you shortly.");
     } catch (err) {
@@ -57,7 +59,9 @@ export default function QuoteModal() {
           <X size={20} />
         </button>
         <p className="text-xs uppercase tracking-[0.2em] text-brand-500">Request a quote</p>
-        <h3 className="mt-2 pr-8 text-2xl font-medium">{quoteProduct.name || "General inquiry"}</h3>
+        <h3 className="product-name mt-2 pr-8 text-2xl leading-snug sm:text-3xl">
+          {quoteProduct.name || "General inquiry"}
+        </h3>
         <form onSubmit={onSubmit} className="mt-6 space-y-4" noValidate>
           <div>
             <input
@@ -77,6 +81,16 @@ export default function QuoteModal() {
               className="field-input"
             />
             {fieldErrors.email && <p className="mt-1 text-xs text-brand-600">{fieldErrors.email}</p>}
+          </div>
+          <div>
+            <input
+              type="tel"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              placeholder="WhatsApp number"
+              className="field-input"
+            />
+            {fieldErrors.phone && <p className="mt-1 text-xs text-brand-600">{fieldErrors.phone}</p>}
           </div>
           <div>
             <textarea

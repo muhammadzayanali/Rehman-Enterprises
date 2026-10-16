@@ -2,10 +2,10 @@ import { useState } from "react";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { submitInquiry } from "../api/inquiries";
 import { getErrorMessage } from "../api/client";
-import { isValidEmail } from "../utils/validation.js";
+import { isValidEmail, isValidPhone } from "../utils/validation.js";
 
 export default function ContactPage() {
-  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
   const [fieldErrors, setFieldErrors] = useState({});
   const [status, setStatus] = useState({ error: "", success: "" });
   const [loading, setLoading] = useState(false);
@@ -14,6 +14,7 @@ export default function ContactPage() {
     const next = {};
     if (form.name.trim().length < 2) next.name = "Please enter your name.";
     if (!isValidEmail(form.email)) next.email = "Enter a valid email address.";
+    if (!isValidPhone(form.phone)) next.phone = "Enter a WhatsApp number so we can reply.";
     if (form.message.trim().length < 8) next.message = "Please write a slightly longer message.";
     setFieldErrors(next);
     return Object.keys(next).length === 0;
@@ -26,7 +27,7 @@ export default function ContactPage() {
     setLoading(true);
     try {
       await submitInquiry(form);
-      setForm({ name: "", email: "", message: "" });
+      setForm({ name: "", email: "", phone: "", message: "" });
       setStatus({ error: "", success: "Thank you. We will respond shortly." });
     } catch (error) {
       setStatus({ error: getErrorMessage(error, "Could not send your message."), success: "" });
@@ -90,6 +91,16 @@ export default function ContactPage() {
               className="field-input"
             />
             {fieldErrors.email && <p className="mt-1 text-xs text-brand-600">{fieldErrors.email}</p>}
+          </div>
+          <div>
+            <input
+              type="tel"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              placeholder="WhatsApp number"
+              className="field-input"
+            />
+            {fieldErrors.phone && <p className="mt-1 text-xs text-brand-600">{fieldErrors.phone}</p>}
           </div>
           <div>
             <textarea

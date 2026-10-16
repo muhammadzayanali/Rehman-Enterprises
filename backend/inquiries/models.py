@@ -15,6 +15,7 @@ class Inquiry(models.Model):
 
     name = models.CharField(max_length=160)
     email = models.EmailField()
+    phone = models.CharField(max_length=32, blank=True, default="")
     message = models.TextField()
     product = models.ForeignKey(
         Product,

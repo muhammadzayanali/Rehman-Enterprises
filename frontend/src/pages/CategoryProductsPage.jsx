@@ -64,7 +64,9 @@ export default function CategoryProductsPage() {
         />
         <div className="absolute inset-0 bg-black/40" />
         <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-white">
-          <h1 className="text-3xl font-medium sm:text-4xl">{category?.name || (search ? "Search" : "Shop")}</h1>
+          <h1 className="product-name text-[1.75rem] leading-snug text-white sm:text-4xl md:text-5xl">
+            {category?.name || (search ? "Search" : "Shop")}
+          </h1>
           <p className="mt-3 text-sm text-white/80">
             Home / {category?.name || "Collections"}
           </p>

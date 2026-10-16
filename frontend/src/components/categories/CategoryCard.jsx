@@ -106,7 +106,7 @@ export default function CategoryCard({ category }) {
       </div>
       <Link
         to={collectionTo}
-        className="absolute bottom-5 left-0 z-[1] max-w-[90%] bg-brand-500 px-4 py-2 text-[13px] font-medium text-white shadow sm:bottom-8 sm:px-6 sm:text-sm"
+        className="absolute bottom-5 left-0 z-[1] max-w-[90%] bg-brand-500 px-4 py-2 text-[15px] font-semibold leading-snug tracking-tight text-white shadow sm:bottom-8 sm:px-6 sm:text-base"
       >
         {category.name}
       </Link>

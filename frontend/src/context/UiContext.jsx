@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { addToCartApi, fetchCart, fetchWishlist, removeFromCartApi, toggleWishlistApi } from "../api/shop";
-import { sendOrderToWhatsApp } from "../utils/whatsapp";
+import { sendOrderToWhatsApp, sendQuoteToWhatsApp } from "../utils/whatsapp";
 import { useAuth } from "./AuthContext.jsx";
 
 const UiContext = createContext(null);
@@ -18,7 +18,6 @@ export function UiProvider({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
   const [bagOpen, setBagOpen] = useState(false);
-  const [quoteProduct, setQuoteProduct] = useState(null);
   const [wishlist, setWishlist] = useState([]);
   const [bag, setBag] = useState([]);
   const [toast, setToast] = useState("");
@@ -51,9 +50,15 @@ export function UiProvider({ children }) {
       setWishlistOpen,
       bagOpen,
       setBagOpen,
-      quoteProduct,
-      openQuote: (product) => setQuoteProduct(product || {}),
-      closeQuote: () => setQuoteProduct(null),
+      openQuote(product) {
+        if (!product) return false;
+        const opened = sendQuoteToWhatsApp(normalize(product), user);
+        if (opened) {
+          setToast("Opening WhatsApp to request a quote");
+          window.setTimeout(() => setToast(""), 2800);
+        }
+        return opened;
+      },
       wishlist,
       bag,
       async toggleWishlist(product) {
@@ -100,7 +105,7 @@ export function UiProvider({ children }) {
         setSearchOpen(false);
       },
     }),
-    [searchOpen, menuOpen, wishlistOpen, bagOpen, quoteProduct, wishlist, bag, toast, isAuthenticated, user]
+    [searchOpen, menuOpen, wishlistOpen, bagOpen, wishlist, bag, toast, isAuthenticated, user]
   );
 
   return <UiContext.Provider value={value}>{children}</UiContext.Provider>;

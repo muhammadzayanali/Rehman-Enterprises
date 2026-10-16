@@ -102,7 +102,7 @@ export default function SearchModal() {
                     className="h-16 w-12 object-cover"
                   />
                   <div>
-                    <p className="font-medium">{category.name}</p>
+                    <p className="product-name text-[15px] leading-snug">{category.name}</p>
                     <p className="text-sm text-black/50">
                       Collection
                       {category.product_count
@@ -128,7 +128,7 @@ export default function SearchModal() {
                 >
                   <img src={product.image_url} alt={product.name} className="h-16 w-12 object-cover" />
                   <div>
-                    <p className="font-medium">{product.name}</p>
+                    <p className="product-name text-[15px] leading-snug">{product.name}</p>
                     <p className="text-sm text-black/50">{product.category?.name}</p>
                   </div>
                 </Link>

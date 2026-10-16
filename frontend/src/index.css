@@ -50,6 +50,10 @@ video {
   @apply text-[22px] sm:text-[28px] md:text-[34px] font-medium tracking-[0.16em] uppercase;
 }
 
+.product-name {
+  @apply font-semibold tracking-tight break-words;
+}
+
 .btn-dark {
   @apply inline-flex min-h-11 items-center justify-center bg-ink px-7 py-3 text-xs font-medium uppercase tracking-[0.18em] text-white transition hover:bg-black disabled:opacity-60;
 }

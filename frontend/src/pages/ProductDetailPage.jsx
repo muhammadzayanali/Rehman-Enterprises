@@ -77,14 +77,14 @@ export default function ProductDetailPage() {
         </div>
 
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-brand-500">{product.category?.name}</p>
-          <h1 className="mt-3 text-3xl font-medium sm:text-4xl">{product.name}</h1>
+          <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-brand-500 sm:text-sm">
+            {product.category?.name}
+          </p>
+          <h1 className="product-name mt-2 text-[1.75rem] leading-snug sm:text-4xl md:text-[2.75rem] lg:text-5xl">
+            {product.name}
+          </h1>
           <p className={`mt-4 text-lg ${outOfStock ? "text-black/40" : "text-brand-500"}`}>
-            {outOfStock
-              ? "Out of stock"
-              : product.show_price
-                ? `$${Number(product.price).toFixed(2)}`
-                : "Kindly inquire for price"}
+            {outOfStock ? "Out of stock" : "Inquire for price"}
           </p>
           <p className="mt-6 text-[15px] leading-7 text-black/75">{product.description}</p>
           <dl className="mt-8 space-y-3 text-sm">

@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Layers, LogOut, Menu, MessageSquare, Package, X } from "lucide-react";
+import { LayoutDashboard, Layers, LogOut, Menu, Package, X } from "lucide-react";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 const links = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/admin/categories", label: "Categories", icon: Layers },
   { to: "/admin/products", label: "Products", icon: Package },
-  { to: "/admin/inquiries", label: "Inquiries", icon: MessageSquare },
 ];
 
 function NavItems({ onClick }) {

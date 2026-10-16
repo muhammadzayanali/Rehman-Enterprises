@@ -1,18 +1,10 @@
 export const WHATSAPP_NUMBER = "923008425999";
 
-export function formatPrice(product) {
-  const amount = Number(product?.price);
-  if (product?.show_price && Number.isFinite(amount) && amount > 0) {
-    return `$${amount.toFixed(2)}`;
-  }
+export function formatPrice() {
   return "Inquire for price";
 }
 
-function whatsappPrice(product) {
-  const amount = Number(product?.price);
-  if (product?.show_price && Number.isFinite(amount) && amount > 0) {
-    return `$${amount.toFixed(2)}`;
-  }
+function whatsappPrice() {
   return "";
 }
 
@@ -61,6 +53,8 @@ export function buildOrderMessage(products, customer) {
   const body = [
     "*New Order — Rehman Enterprises*",
     "",
+    "I want to place an order for the rug(s) below.",
+    "",
     ...customerBlock,
     "",
     `*Order items (${items.length})*`,
@@ -69,7 +63,7 @@ export function buildOrderMessage(products, customer) {
     "",
     `*Total: ${orderTotalLabel(items)}*`,
     "",
-    "Please confirm availability and the final price. Thank you.",
+    "Please confirm availability and how I can complete this order. Thank you.",
   ];
   return body.join("\n");
 }
@@ -82,10 +76,44 @@ export function whatsappOrderUrl(products, customer) {
 export function sendOrderToWhatsApp(products, customer) {
   const items = products || [];
   if (!items.length) return false;
-  const url = whatsappOrderUrl(items, customer);
+  return openWhatsApp(whatsappOrderUrl(items, customer));
+}
+
+export function buildQuoteMessage(product, customer) {
+  const name = customerName(customer);
+  const customerBlock = ["*Customer*"];
+  if (name) customerBlock.push(`Name: ${name}`);
+  if (customer?.email) customerBlock.push(`Email: ${customer.email}`);
+  if (!name && !customer?.email) customerBlock.push("Browsing as guest");
+
+  return [
+    "*Price quote only — Rehman Enterprises*",
+    "",
+    "I am not placing an order yet. Please send the price for this rug.",
+    "",
+    ...customerBlock,
+    "",
+    "*Rug for quote*",
+    formatItem(product, 0).replace(/^1\) /, ""),
+    "",
+    "Please reply with the price, availability, and any custom size options. Thank you.",
+  ].join("\n");
+}
+
+export function whatsappQuoteUrl(product, customer) {
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(buildQuoteMessage(product, customer))}`;
+}
+
+export function sendQuoteToWhatsApp(product, customer) {
+  if (!product) return false;
+  return openWhatsApp(whatsappQuoteUrl(product, customer));
+}
+
+function openWhatsApp(url) {
   const opened = window.open(url, "_blank");
   if (!opened) {
     window.location.assign(url);
   }
   return true;
 }
+
