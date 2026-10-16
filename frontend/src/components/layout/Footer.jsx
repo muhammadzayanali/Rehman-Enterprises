@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Facebook, Instagram } from "lucide-react";
 import { useEffect, useState } from "react";
 import { fetchCategories } from "../../api/catalog";
+import { ADDRESS_LINES, EMAILS, MAPS_EMBED_URL, MAPS_URL, PHONES } from "../../data/contact";
 import { WHATSAPP_NUMBER } from "../../utils/whatsapp";
 
 const FACEBOOK_URL = "https://www.facebook.com/search/top?q=rehman%20enterprises";
@@ -55,36 +56,54 @@ export default function Footer() {
             <h3 className={headingClass}>Rehman Enterprises</h3>
             <address className="mt-5 space-y-3 text-[13px] leading-[22px] text-black/65 not-italic">
               <p>
-                139-A Habibullah Road
-                <br />
-                Link Davis Road Lahore
-              </p>
-              <p>
-                <a href="mailto:info@rehmanenterprises.co" className={linkClass}>
-                  info@rehmanenterprises.co
-                </a>
-                <br />
-                <a href="mailto:rehman.re@gmail.com" className={linkClass}>
-                  rehman.re@gmail.com
+                <a href={MAPS_URL} target="_blank" rel="noreferrer noopener" className={linkClass}>
+                  {ADDRESS_LINES.map((line) => (
+                    <span key={line} className="block">
+                      {line}
+                    </span>
+                  ))}
                 </a>
               </p>
               <p>
-                Contact:{" "}
-                <a href="tel:+924236364080" className={linkClass}>
-                  0092 42 36364080
-                </a>
-                <br />
-                Cell:{" "}
-                <a href="tel:+923008425999" className={linkClass}>
-                  0092 300 8425999
-                </a>
-                <br />
-                WhatsApp:{" "}
-                <a href={WHATSAPP_URL} target="_blank" rel="noreferrer noopener" className={linkClass}>
-                  0092 300 8425999
-                </a>
+                {EMAILS.map((email) => (
+                  <a key={email.href} href={email.href} className={`${linkClass} block`}>
+                    {email.label}
+                  </a>
+                ))}
+              </p>
+              <p>
+                {PHONES.map((phone) => (
+                  <span key={phone.kind} className="block">
+                    {phone.kind}:{" "}
+                    <a
+                      href={phone.href}
+                      className={linkClass}
+                      {...(phone.kind === "WhatsApp" ? { target: "_blank", rel: "noreferrer noopener" } : {})}
+                    >
+                      {phone.display}
+                    </a>
+                  </span>
+                ))}
               </p>
             </address>
+            <a
+              href={MAPS_URL}
+              target="_blank"
+              rel="noreferrer noopener"
+              aria-label="Open Rehman Enterprises on Google Maps"
+              className="relative mt-5 block w-full max-w-[240px] overflow-hidden rounded-md border border-black/10 shadow-soft"
+            >
+              <iframe
+                title="Rehman Enterprises location"
+                src={MAPS_EMBED_URL}
+                className="pointer-events-none -mb-12 h-48 w-full"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+              <span className="absolute inset-x-0 bottom-0 bg-ink/75 px-3 py-1.5 text-center text-[10px] font-medium uppercase tracking-[0.14em] text-white">
+                Open in Google Maps
+              </span>
+            </a>
             <div className="mt-6 flex items-center gap-2.5">
               <SocialLink href={FACEBOOK_URL} label="Facebook">
                 <Facebook size={15} />

@@ -109,11 +109,57 @@ export function sendQuoteToWhatsApp(product, customer) {
   return openWhatsApp(whatsappQuoteUrl(product, customer));
 }
 
+export function buildContactMessage(form) {
+  return [
+    "*Contact message — Rehman Enterprises*",
+    "",
+    "*Customer*",
+    `Name: ${form.name || "Not provided"}`,
+    `Email: ${form.email || "Not provided"}`,
+    "",
+    "*Message*",
+    form.message || "",
+    "",
+    "Please reply in this WhatsApp chat.",
+  ].join("\n");
+}
+
+export function sendContactToWhatsApp(form) {
+  if (!form?.message) return false;
+  const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(buildContactMessage(form))}`;
+  return openWhatsApp(url);
+}
+
 function openWhatsApp(url) {
   const opened = window.open(url, "_blank");
   if (!opened) {
     window.location.assign(url);
   }
   return true;
+}
+
+export function normalizeWhatsAppNumber(raw) {
+  let digits = String(raw || "").replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  if (digits.startsWith("0") && digits.length >= 10) digits = `92${digits.slice(1)}`;
+  return digits;
+}
+
+export function customerStatusWhatsAppUrl(inquiry, kind) {
+  const number = normalizeWhatsAppNumber(inquiry?.phone);
+  if (!number) return "";
+  const name = inquiry?.name || "there";
+  const text =
+    kind === "CLOSED"
+      ? `Hello ${name}, this is Rehman Enterprises. Thank you for your message. We have closed this request. Reply here on WhatsApp if you need anything else.`
+      : `Hello ${name}, this is Rehman Enterprises. We received your message and are happy to help. Please reply here on WhatsApp.`;
+  return `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
+}
+
+export function notifyCustomerOnWhatsApp(inquiry, kind) {
+  const url = customerStatusWhatsAppUrl(inquiry, kind);
+  if (!url) return false;
+  return openWhatsApp(url);
 }
 
