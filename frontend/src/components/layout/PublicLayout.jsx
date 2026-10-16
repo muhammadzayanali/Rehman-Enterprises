@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import Header from "./Header.jsx";
 import Footer from "./Footer.jsx";
+import ScrollToTop from "./ScrollToTop.jsx";
 import SearchModal from "../search/SearchModal.jsx";
 import QuoteModal from "../inquiry/QuoteModal.jsx";
 import { useUi } from "../../context/UiContext.jsx";
@@ -10,6 +11,7 @@ export default function PublicLayout() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-white">
+      <ScrollToTop />
       <Header />
       <main id="main">
         <Outlet />
