@@ -184,7 +184,7 @@ export default function Header() {
               <li key={item.slug} className="flex gap-3">
                 <button
                   type="button"
-                  className="h-20 w-16 shrink-0 overflow-hidden bg-mist"
+                  className="h-20 w-16 shrink-0 overflow-hidden bg-white"
                   onClick={() => {
                     setWishlistOpen(false);
                     navigate(`/products/${item.slug}`);

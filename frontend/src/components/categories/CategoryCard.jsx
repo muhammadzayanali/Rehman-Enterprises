@@ -75,14 +75,13 @@ export default function CategoryCard({ category }) {
   }
 
   return (
-    <article className={`group relative overflow-hidden bg-mist ${outOfStock ? "grayscale" : ""}`}>
+    <article className={`group relative overflow-hidden bg-white ${outOfStock ? "grayscale" : ""}`}>
       <Link to={collectionTo} className="block">
         <SmartImage
           src={category.image_url}
           alt={category.name}
-          className={`aspect-[3/4] h-full w-full object-cover transition duration-700 ${
-            outOfStock ? "opacity-60" : "group-hover:scale-105"
-          }`}
+          fit="contain"
+          className={outOfStock ? "opacity-60" : ""}
         />
       </Link>
       {outOfStock && (

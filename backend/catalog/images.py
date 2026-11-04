@@ -19,9 +19,14 @@ def _cloudinary_resized(url, max_width):
     if marker not in url:
         return url
     prefix, rest = url.split(marker, 1)
-    if rest.startswith("w_"):
+    if rest.startswith("w_") or rest.startswith("c_"):
         return url
-    return f"{prefix}/upload/w_{max_width},c_limit,f_auto,q_auto/{rest}"
+    # Pad into a fixed 3:4 frame so mixed admin uploads stay consistent in the shop.
+    return (
+        f"{prefix}/upload/"
+        f"w_{max_width},ar_3:4,c_pad,b_rgb:ffffff,f_auto,q_auto/"
+        f"{rest}"
+    )
 
 
 def optimized_url(request, file_field, max_width=LIST_WIDTH):
@@ -61,6 +66,10 @@ def ensure_webp_thumb(file_field, max_width=LIST_WIDTH):
         image = ImageOps.exif_transpose(image)
         image = image.convert("RGB")
         image.thumbnail((max_width, max_width * 2), Image.Resampling.LANCZOS)
-        image.save(dest, "WEBP", quality=76, method=4)
+        target_h = int(max_width * 4 / 3)
+        canvas = Image.new("RGB", (max_width, target_h), (255, 255, 255))
+        offset = ((max_width - image.width) // 2, (target_h - image.height) // 2)
+        canvas.paste(image, offset)
+        canvas.save(dest, "WEBP", quality=76, method=4)
 
     return dest_rel

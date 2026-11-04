@@ -37,22 +37,23 @@ export default function ProductDetailPage() {
 
   return (
     <div className="container-wide py-8 sm:py-12">
-      <p className="text-xs text-black/50 sm:text-sm">
+      <p className="break-words text-xs text-black/50 sm:text-sm">
         <Link to="/">Home</Link> /{" "}
         <Link to={`/collections/${product.category?.slug}`}>{product.category?.name}</Link> /{" "}
         {product.name}
       </p>
 
       <div className="mt-6 grid gap-8 lg:mt-8 lg:grid-cols-2 lg:gap-12">
-        <div>
-          <div className={`relative bg-mist ${outOfStock ? "grayscale" : ""}`}>
+        <div className="min-w-0">
+          <div className={`relative bg-white ${outOfStock ? "grayscale" : ""}`}>
             <SmartImage
               key={activeImage}
               src={activeImage}
               alt={product.name}
               eager
+              fit="contain"
               aspectClass="aspect-[3/4]"
-              className={`h-full w-full object-cover ${outOfStock ? "opacity-60" : ""}`}
+              className={outOfStock ? "opacity-60" : ""}
             />
             {outOfStock && (
               <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-black/55 py-2 text-center text-[11px] font-medium uppercase tracking-[0.16em] text-white">
@@ -69,15 +70,19 @@ export default function ProductDetailPage() {
                   onClick={() => setActiveImage(image.image_url)}
                   className={`border ${activeImage === image.image_url ? "border-ink" : "border-transparent"}`}
                 >
-                  <img src={image.image_url} alt={image.alt_text || product.name} />
+                  <img
+                    src={image.image_url}
+                    alt={image.alt_text || product.name}
+                    className="aspect-[3/4] h-full w-full bg-white object-contain object-center"
+                  />
                 </button>
               ))}
             </div>
           )}
         </div>
 
-        <div>
-          <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-brand-500 sm:text-sm">
+        <div className="min-w-0">
+          <p className="break-words text-[13px] font-semibold uppercase tracking-[0.08em] text-brand-500 sm:text-sm">
             {product.category?.name}
           </p>
           <h1 className="product-name mt-2 text-[1.75rem] leading-snug sm:text-4xl md:text-[2.75rem] lg:text-5xl">
@@ -86,30 +91,32 @@ export default function ProductDetailPage() {
           <p className={`mt-4 text-lg ${outOfStock ? "text-black/40" : "text-brand-500"}`}>
             {outOfStock ? "Out of stock" : "Inquire for price"}
           </p>
-          <p className="mt-6 text-[15px] leading-7 text-black/75">{product.description}</p>
+          <p className="mt-6 break-words text-[15px] leading-7 text-black/75 [overflow-wrap:anywhere]">
+            {product.description}
+          </p>
           <dl className="mt-8 space-y-3 text-sm">
             {product.material && (
               <div className="flex gap-4 border-b border-black/10 py-3">
                 <dt className="w-28 shrink-0 text-black/50 sm:w-32">Material</dt>
-                <dd>{product.material}</dd>
+                <dd className="min-w-0 break-words [overflow-wrap:anywhere]">{product.material}</dd>
               </div>
             )}
             {product.dimensions && (
               <div className="flex gap-4 border-b border-black/10 py-3">
                 <dt className="w-28 shrink-0 text-black/50 sm:w-32">Dimensions</dt>
-                <dd>{product.dimensions}</dd>
+                <dd className="min-w-0 break-words [overflow-wrap:anywhere]">{product.dimensions}</dd>
               </div>
             )}
             {product.shape && (
               <div className="flex gap-4 border-b border-black/10 py-3">
                 <dt className="w-28 shrink-0 text-black/50 sm:w-32">Shape</dt>
-                <dd>{product.shape}</dd>
+                <dd className="min-w-0 break-words [overflow-wrap:anywhere]">{product.shape}</dd>
               </div>
             )}
             {product.sku && (
               <div className="flex gap-4 border-b border-black/10 py-3">
                 <dt className="w-28 shrink-0 text-black/50 sm:w-32">Stock ID</dt>
-                <dd>{product.sku}</dd>
+                <dd className="min-w-0 break-words [overflow-wrap:anywhere]">{product.sku}</dd>
               </div>
             )}
             <div className="flex gap-4 border-b border-black/10 py-3">

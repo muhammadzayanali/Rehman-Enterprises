@@ -40,15 +40,14 @@ export default function ProductCard({ product, eager = false }) {
 
   return (
     <article className={`group ${outOfStock ? "grayscale" : ""}`}>
-      <div className="relative overflow-hidden bg-mist">
+      <div className="relative overflow-hidden bg-white">
         <Link to={productTo} className="block">
           <SmartImage
             src={product.image_url}
             alt={product.name}
             eager={eager}
-            className={`aspect-[3/4] h-full w-full object-cover transition duration-500 ${
-              outOfStock ? "opacity-60" : "group-hover:scale-[1.03]"
-            }`}
+            fit="contain"
+            className={outOfStock ? "opacity-60" : ""}
           />
         </Link>
         {outOfStock && (
