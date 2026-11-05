@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { fetchProduct } from "../api/catalog";
+import ProductGallery from "../components/products/ProductGallery.jsx";
 import ProductGrid from "../components/products/ProductGrid.jsx";
 import RoundLoader from "../components/ui/RoundLoader.jsx";
-import SmartImage from "../components/ui/SmartImage.jsx";
 import { useUi } from "../context/UiContext.jsx";
 import { useLoginGate } from "../hooks/useLoginGate.js";
 import { isOutOfStock } from "../utils/stock.js";
@@ -11,7 +11,6 @@ import { isOutOfStock } from "../utils/stock.js";
 export default function ProductDetailPage() {
   const { slug } = useParams();
   const [product, setProduct] = useState(null);
-  const [activeImage, setActiveImage] = useState("");
   const [error, setError] = useState("");
   const { openQuote, toggleWishlist, isWished, addToBag, showToast } = useUi();
   const requireLogin = useLoginGate();
@@ -23,7 +22,6 @@ export default function ProductDetailPage() {
     fetchProduct(slug)
       .then((data) => {
         setProduct(data);
-        setActiveImage(data.images?.[0]?.image_url || data.image_url);
       })
       .catch(() => setError("This rug is no longer available."));
   }, [slug]);
@@ -44,42 +42,18 @@ export default function ProductDetailPage() {
       </p>
 
       <div className="mt-6 grid gap-8 lg:mt-8 lg:grid-cols-2 lg:gap-12">
-        <div className="min-w-0">
-          <div className={`relative bg-white ${outOfStock ? "grayscale" : ""}`}>
-            <SmartImage
-              key={activeImage}
-              src={activeImage}
-              alt={product.name}
-              eager
-              fit="contain"
-              aspectClass="aspect-[3/4]"
-              className={outOfStock ? "opacity-60" : ""}
-            />
-            {outOfStock && (
-              <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-black/55 py-2 text-center text-[11px] font-medium uppercase tracking-[0.16em] text-white">
-                Out of stock
-              </span>
-            )}
-          </div>
-          {product.images?.length > 1 && (
-            <div className="mt-3 grid grid-cols-4 gap-2 sm:mt-4 sm:gap-3">
-              {product.images.map((image) => (
-                <button
-                  key={image.id}
-                  type="button"
-                  onClick={() => setActiveImage(image.image_url)}
-                  className={`border ${activeImage === image.image_url ? "border-ink" : "border-transparent"}`}
-                >
-                  <img
-                    src={image.image_url}
-                    alt={image.alt_text || product.name}
-                    className="aspect-[3/4] h-full w-full bg-white object-contain object-center"
-                  />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <ProductGallery
+          key={product.slug}
+          images={
+            product.images?.length
+              ? product.images
+              : product.image_url
+                ? [{ id: "cover", image_url: product.image_url, alt_text: product.name }]
+                : []
+          }
+          name={product.name}
+          outOfStock={outOfStock}
+        />
 
         <div className="min-w-0">
           <p className="break-words text-[13px] font-semibold uppercase tracking-[0.08em] text-brand-500 sm:text-sm">

@@ -9,6 +9,7 @@ import {
   adminUpdateProduct,
 } from "../../api/catalog";
 import { getErrorMessage, unwrapList } from "../../api/client";
+import AdminImagePicker from "../../components/admin/AdminImagePicker.jsx";
 
 const empty = {
   name: "",
@@ -69,13 +70,30 @@ export default function AdminProductFormPage() {
     });
   }, [id, isEdit]);
 
-  function addFiles(fileList) {
-    const files = Array.from(fileList || []).map((file, index) => ({
+  function addFiles(files) {
+    const next = files.map((file) => ({
       file,
       preview: URL.createObjectURL(file),
-      sort: newFiles.length + index,
     }));
-    setNewFiles((current) => [...current, ...files]);
+    setNewFiles((current) => [...current, ...next]);
+  }
+
+  function removeNew(index) {
+    setNewFiles((current) => {
+      const removed = current[index];
+      if (removed?.preview) URL.revokeObjectURL(removed.preview);
+      return current.filter((_, itemIndex) => itemIndex !== index);
+    });
+  }
+
+  function moveNew(index, direction) {
+    setNewFiles((current) => {
+      const swap = index + direction;
+      if (swap < 0 || swap >= current.length) return current;
+      const next = [...current];
+      [next[index], next[swap]] = [next[swap], next[index]];
+      return next;
+    });
   }
 
   async function removeExisting(imageId) {
@@ -263,49 +281,16 @@ export default function AdminProductFormPage() {
         </label>
       </div>
 
-      <div>
-        <p className="text-sm font-medium">Images</p>
-        <p className="mb-3 text-xs text-black/50">
-          Upload several photos. For now, products can reuse the collection image.
-        </p>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {existingImages.map((image, index) => (
-            <div key={image.id} className="border bg-white p-2">
-              <img src={image.image_url} alt="" className="h-32 w-full object-cover" />
-              <div className="mt-2 flex justify-between text-xs">
-                <button type="button" onClick={() => moveExisting(index, -1)}>
-                  Up
-                </button>
-                <button type="button" onClick={() => moveExisting(index, 1)}>
-                  Down
-                </button>
-                <button type="button" onClick={() => removeExisting(image.id)} className="text-brand-600">
-                  Remove
-                </button>
-              </div>
-            </div>
-          ))}
-          {newFiles.map((item, index) => (
-            <div key={item.preview} className="border bg-white p-2">
-              <img src={item.preview} alt="" className="h-32 w-full object-cover" />
-              <button
-                type="button"
-                className="mt-2 text-xs text-brand-600"
-                onClick={() => setNewFiles((current) => current.filter((_, i) => i !== index))}
-              >
-                Remove
-              </button>
-            </div>
-          ))}
-        </div>
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          className="mt-4"
-          onChange={(e) => addFiles(e.target.files)}
-        />
-      </div>
+      <AdminImagePicker
+        editing={isEdit}
+        existingImages={existingImages}
+        newFiles={newFiles}
+        onAddFiles={addFiles}
+        onRemoveExisting={removeExisting}
+        onMoveExisting={moveExisting}
+        onRemoveNew={removeNew}
+        onMoveNew={moveNew}
+      />
 
       {error && <p className="text-sm text-brand-600">{error}</p>}
       {success && <p className="text-sm text-green-700">{success}</p>}

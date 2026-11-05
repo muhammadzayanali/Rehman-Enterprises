@@ -175,5 +175,8 @@ REST_FRAMEWORK = {
 }
 
 # Developer Django Admin lives at /django-admin/ so the React CMS can own /admin.
-FILE_UPLOAD_MAX_MEMORY_SIZE = 12 * 1024 * 1024
-DATA_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024
+# Rug photos are large, and one product can have many of them. Do not cap the
+# batch, or the admin save drops the rest of the set.
+FILE_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024
+DATA_UPLOAD_MAX_MEMORY_SIZE = 512 * 1024 * 1024
+DATA_UPLOAD_MAX_NUMBER_FILES = None

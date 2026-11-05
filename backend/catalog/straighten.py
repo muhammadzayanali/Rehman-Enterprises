@@ -38,6 +38,74 @@ def _quad_size(rect: np.ndarray) -> tuple[int, int]:
     return max(max_w, 1), max(max_h, 1)
 
 
+def _side_quad(contour: np.ndarray) -> Optional[np.ndarray]:
+    """Recover four corners from the longest sides.
+
+    A rotated rug photo often loses its sharp tips to the white backdrop, so a
+    bounding box looks straight while the rug is still tilted. Extending the
+    four long edges restores the rectangle.
+    """
+    hull = cv2.convexHull(contour).reshape(-1, 2).astype(np.float64)
+    count = len(hull)
+    if count < 4:
+        return None
+
+    edges = []
+    for index in range(count):
+        start = hull[index]
+        end = hull[(index + 1) % count]
+        delta = end - start
+        length = float(np.linalg.norm(delta))
+        angle = float(np.arctan2(delta[1], delta[0])) if length else 0.0
+        edges.append((start, end, length, angle))
+
+    tolerance = np.deg2rad(8)
+    groups = [[0]]
+    for index in range(1, count):
+        turn = abs((edges[index][3] - edges[groups[-1][-1]][3] + np.pi) % (2 * np.pi) - np.pi)
+        if turn < tolerance:
+            groups[-1].append(index)
+        else:
+            groups.append([index])
+    if len(groups) > 1:
+        turn = abs((edges[groups[0][0]][3] - edges[groups[-1][-1]][3] + np.pi) % (2 * np.pi) - np.pi)
+        if turn < tolerance:
+            groups[0] = groups[-1] + groups[0]
+            groups.pop()
+
+    sides = []
+    for group in groups:
+        start = edges[group[0]][0]
+        end = edges[group[-1]][1]
+        sides.append((start, end, float(np.linalg.norm(end - start))))
+    if len(sides) < 4:
+        return None
+    if len(sides) > 4:
+        longest = sorted(sides, key=lambda side: side[2], reverse=True)[:4]
+        center = np.mean([(side[0] + side[1]) / 2.0 for side in longest], axis=0)
+
+        def midpoint_angle(side):
+            midpoint = (side[0] + side[1]) / 2.0
+            return np.arctan2(midpoint[1] - center[1], midpoint[0] - center[0])
+
+        sides = sorted(longest, key=midpoint_angle)
+
+    corners = []
+    for index in range(4):
+        point = _line_intersection(sides[index][0], sides[index][1], sides[(index + 1) % 4][0], sides[(index + 1) % 4][1])
+        if point is None:
+            return None
+        corners.append(point)
+    quad = _order_points(np.array(corners, dtype="float32"))
+    width, height = _quad_size(quad)
+    if width < 40 or height < 40:
+        return None
+    for index in range(4):
+        if float(np.linalg.norm(quad[index] - quad[(index + 1) % 4])) < 30:
+            return None
+    return quad
+
+
 def _find_rug_quad(bgr: np.ndarray) -> Optional[np.ndarray]:
     h, w = bgr.shape[:2]
     scale = 900 / max(h, w)
@@ -76,8 +144,10 @@ def _find_rug_quad(bgr: np.ndarray) -> Optional[np.ndarray]:
     if len(approx) == 4:
         pts = approx.reshape(4, 2).astype("float32")
     else:
-        rect = cv2.minAreaRect(contour)
-        pts = cv2.boxPoints(rect).astype("float32")
+        pts = _side_quad(contour)
+        if pts is None:
+            rect = cv2.minAreaRect(contour)
+            pts = cv2.boxPoints(rect).astype("float32")
 
     # Reject nearly-axis-aligned "already straight" photos with tiny tilt.
     ordered = _order_points(pts)
@@ -123,6 +193,18 @@ def _outset_quad(rect: np.ndarray, amount: float = 0.02) -> np.ndarray:
     """Grow the detected rug slightly so the outer border is not clipped."""
     center = rect.mean(axis=0)
     return (center + (rect - center) * (1 + amount)).astype("float32")
+
+
+def _quad_inside(quad: np.ndarray, width: int, height: int, margin: float = 2.0) -> bool:
+    """True when every corner still lands inside the photo."""
+    xs = quad[:, 0]
+    ys = quad[:, 1]
+    return bool(
+        float(xs.min()) >= -margin
+        and float(ys.min()) >= -margin
+        and float(xs.max()) <= width - 1 + margin
+        and float(ys.max()) <= height - 1 + margin
+    )
 
 
 def _line_intersection(a, b, c, d):
@@ -205,34 +287,108 @@ def _add_white_margin(rgb: np.ndarray, margin: float = 0.04) -> np.ndarray:
     return cv2.copyMakeBorder(rgb, top, top, side, side, cv2.BORDER_CONSTANT, value=list(WHITE))
 
 
-def straighten_rug_bgr(bgr: np.ndarray) -> np.ndarray:
-    quad = _find_rug_quad(bgr)
-    rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-    # Already straight, rectangular, or round: leave the photo unchanged.
-    if quad is None:
-        return rgb
-
+def _largest_rug_contour(bgr: np.ndarray) -> Optional[np.ndarray]:
     h, w = bgr.shape[:2]
-    if not _needs_warp(quad, w, h):
-        return rgb
+    hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
+    white = cv2.inRange(hsv, np.array([0, 0, 185], dtype=np.uint8), np.array([180, 45, 255], dtype=np.uint8))
+    mask = cv2.bitwise_not(white)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((7, 7), np.uint8), iterations=2)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8), iterations=1)
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        return None
+    contour = max(contours, key=cv2.contourArea)
+    if cv2.contourArea(contour) < h * w * 0.08:
+        return None
+    return contour
 
-    quad = _outset_quad(quad, 0.015)
-    dest_w, dest_h = _destination_size(quad, w, h)
-    dst = np.array(
-        [[0, 0], [dest_w - 1, 0], [dest_w - 1, dest_h - 1], [0, dest_h - 1]],
-        dtype="float32",
-    )
-    matrix = cv2.getPerspectiveTransform(quad, dst)
-    warped = cv2.warpPerspective(
+
+def _deskew_angle(rect) -> float:
+    """Smallest rotation that lays a tilted rug flat, without flipping it."""
+    angle = float(rect[-1])
+    width, height = rect[1]
+    if width < height:
+        angle += 90.0
+    if angle > 45:
+        angle -= 90.0
+    elif angle < -45:
+        angle += 90.0
+    return angle
+
+
+def _rotate_full(bgr: np.ndarray, angle: float) -> np.ndarray:
+    """Rotate the whole photo. The canvas grows so no border pixel is clipped."""
+    height, width = bgr.shape[:2]
+    center = (width / 2.0, height / 2.0)
+    matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
+    cosine = abs(matrix[0, 0])
+    sine = abs(matrix[0, 1])
+    bound_w = int(height * sine + width * cosine)
+    bound_h = int(height * cosine + width * sine)
+    matrix[0, 2] += bound_w / 2.0 - center[0]
+    matrix[1, 2] += bound_h / 2.0 - center[1]
+    return cv2.warpAffine(
         bgr,
         matrix,
-        (dest_w, dest_h),
+        (bound_w, bound_h),
         flags=cv2.INTER_LANCZOS4,
         borderMode=cv2.BORDER_CONSTANT,
-        borderValue=WHITE[::-1],  # BGR
+        borderValue=WHITE[::-1],
     )
-    rgb = cv2.cvtColor(warped, cv2.COLOR_BGR2RGB)
-    return _add_white_margin(rgb)
+
+
+def _trim_white(bgr: np.ndarray, margin: float = 0.04) -> np.ndarray:
+    """Drop empty backdrop only. Padding stays outside the rug, never on the border."""
+    height, width = bgr.shape[:2]
+    hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
+    white = cv2.inRange(hsv, np.array([0, 0, 185], dtype=np.uint8), np.array([180, 45, 255], dtype=np.uint8))
+    ys, xs = np.where(cv2.bitwise_not(white) > 0)
+    if len(xs) == 0:
+        return bgr
+    top, bottom = int(ys.min()), int(ys.max())
+    left, right = int(xs.min()), int(xs.max())
+    pad_y = max(int(round((bottom - top) * margin)), 8)
+    pad_x = max(int(round((right - left) * margin)), 8)
+    y0, y1 = max(top - pad_y, 0), min(bottom + pad_y + 1, height)
+    x0, x1 = max(left - pad_x, 0), min(right + pad_x + 1, width)
+    cropped = bgr[y0:y1, x0:x1]
+    extra_top = pad_y - (top - y0)
+    extra_bottom = pad_y - ((y1 - 1) - bottom)
+    extra_left = pad_x - (left - x0)
+    extra_right = pad_x - ((x1 - 1) - right)
+    if extra_top or extra_bottom or extra_left or extra_right:
+        cropped = cv2.copyMakeBorder(
+            cropped,
+            max(extra_top, 0),
+            max(extra_bottom, 0),
+            max(extra_left, 0),
+            max(extra_right, 0),
+            cv2.BORDER_CONSTANT,
+            value=WHITE[::-1],
+        )
+    return cropped
+
+
+def straighten_rug_bgr(bgr: np.ndarray) -> np.ndarray:
+    """Level a tilted rug without cutting its border.
+
+    A perspective crop was slicing the top and bottom borders off. Vertical
+    tilt is only a rotation, so the whole uploaded photo is kept.
+    """
+    rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+    contour = _largest_rug_contour(bgr)
+    if contour is None:
+        return rgb
+    perimeter = cv2.arcLength(contour, True)
+    area = cv2.contourArea(contour)
+    if perimeter > 0 and 4 * np.pi * area / (perimeter * perimeter) > 0.82:
+        return rgb
+    angle = _deskew_angle(cv2.minAreaRect(contour))
+    # Already level. Cropping here is what was shaving the border.
+    if abs(angle) < 0.8:
+        return rgb
+    rotated = _rotate_full(bgr, angle)
+    return cv2.cvtColor(_trim_white(rotated), cv2.COLOR_BGR2RGB)
 
 
 def straighten_image_bytes(data: bytes, filename: str = "rug.jpg") -> tuple[bytes, str]:

@@ -4,8 +4,8 @@ from .images import DETAIL_WIDTH, LIST_WIDTH, optimized_url
 from .models import Category, Product, ProductImage, unique_slug
 
 
-def absolute_url(request, file_field, max_width=LIST_WIDTH):
-    return optimized_url(request, file_field, max_width=max_width)
+def absolute_url(request, file_field, max_width=LIST_WIDTH, pad=True):
+    return optimized_url(request, file_field, max_width=max_width, pad=pad)
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -163,9 +163,9 @@ class ProductDetailSerializer(ProductListSerializer):
     def get_image_url(self, obj):
         first = obj.images.first()
         if first:
-            return absolute_url(self.context.get("request"), first.image, DETAIL_WIDTH)
+            return absolute_url(self.context.get("request"), first.image, DETAIL_WIDTH, pad=False)
         if obj.category and obj.category.image:
-            return absolute_url(self.context.get("request"), obj.category.image, DETAIL_WIDTH)
+            return absolute_url(self.context.get("request"), obj.category.image, DETAIL_WIDTH, pad=False)
         return None
 
     def get_related_products(self, obj):

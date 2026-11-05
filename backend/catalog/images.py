@@ -14,22 +14,23 @@ def media_url(request, relative):
     return url
 
 
-def _cloudinary_resized(url, max_width):
+def _cloudinary_resized(url, max_width, pad=True):
     marker = "/upload/"
     if marker not in url:
         return url
     prefix, rest = url.split(marker, 1)
     if rest.startswith("w_") or rest.startswith("c_"):
         return url
-    # Pad into a fixed 3:4 frame so mixed admin uploads stay consistent in the shop.
-    return (
-        f"{prefix}/upload/"
-        f"w_{max_width},ar_3:4,c_pad,b_rgb:ffffff,f_auto,q_auto/"
-        f"{rest}"
-    )
+    # Shop grids share one frame. Detail photos stay at their real shape so
+    # a wide rug is not letterboxed and then clipped.
+    if pad:
+        transform = f"w_{max_width},ar_3:4,c_pad,b_rgb:ffffff,f_auto,q_auto"
+    else:
+        transform = f"c_limit,w_{max_width},f_auto,q_auto"
+    return f"{prefix}/upload/{transform}/{rest}"
 
 
-def optimized_url(request, file_field, max_width=LIST_WIDTH):
+def optimized_url(request, file_field, max_width=LIST_WIDTH, pad=True):
     if not file_field:
         return None
     try:
@@ -37,9 +38,9 @@ def optimized_url(request, file_field, max_width=LIST_WIDTH):
     except Exception:
         return None
     if "res.cloudinary.com" in url:
-        return _cloudinary_resized(url, max_width)
+        return _cloudinary_resized(url, max_width, pad=pad)
     try:
-        relative = ensure_webp_thumb(file_field, max_width)
+        relative = ensure_webp_thumb(file_field, max_width, pad=pad)
         if relative:
             return media_url(request, relative)
     except (Exception, NotImplementedError):
@@ -49,13 +50,14 @@ def optimized_url(request, file_field, max_width=LIST_WIDTH):
     return url
 
 
-def ensure_webp_thumb(file_field, max_width=LIST_WIDTH):
+def ensure_webp_thumb(file_field, max_width=LIST_WIDTH, pad=True):
     source = Path(file_field.path)
     if not source.exists():
         return None
 
     original_rel = Path(str(file_field.name))
-    dest_rel = Path("cache") / f"w{max_width}" / original_rel.with_suffix(".webp")
+    variant = "pad" if pad else "full"
+    dest_rel = Path("cache") / f"w{max_width}" / variant / original_rel.with_suffix(".webp")
     dest = Path(settings.MEDIA_ROOT) / dest_rel
     dest.parent.mkdir(parents=True, exist_ok=True)
 
@@ -65,11 +67,15 @@ def ensure_webp_thumb(file_field, max_width=LIST_WIDTH):
     with Image.open(source) as image:
         image = ImageOps.exif_transpose(image)
         image = image.convert("RGB")
-        image.thumbnail((max_width, max_width * 2), Image.Resampling.LANCZOS)
-        target_h = int(max_width * 4 / 3)
-        canvas = Image.new("RGB", (max_width, target_h), (255, 255, 255))
-        offset = ((max_width - image.width) // 2, (target_h - image.height) // 2)
-        canvas.paste(image, offset)
-        canvas.save(dest, "WEBP", quality=76, method=4)
+        if pad:
+            target_h = int(max_width * 4 / 3)
+            image.thumbnail((max_width, target_h), Image.Resampling.LANCZOS)
+            canvas = Image.new("RGB", (max_width, target_h), (255, 255, 255))
+            offset = ((max_width - image.width) // 2, (target_h - image.height) // 2)
+            canvas.paste(image, offset)
+            canvas.save(dest, "WEBP", quality=76, method=4)
+        else:
+            image.thumbnail((max_width, max_width * 2), Image.Resampling.LANCZOS)
+            image.save(dest, "WEBP", quality=82, method=4)
 
     return dest_rel
