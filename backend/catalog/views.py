@@ -96,10 +96,14 @@ class AdminCategoryViewSet(viewsets.ModelViewSet):
     ordering_fields = ["sort_order", "name", "created_at"]
 
     def get_queryset(self):
-        return Category.objects.annotate(
-            product_count=Count("products"),
-            stock_count=Coalesce(Sum("products__stock"), 0),
-        ).order_by("sort_order", "name")
+        return (
+            Category.objects.annotate(
+                product_count=Count("products"),
+                stock_count=Coalesce(Sum("products__stock"), 0),
+            )
+            .prefetch_related("products__images")
+            .order_by("sort_order", "name")
+        )
 
     def perform_destroy(self, instance):
         instance.products.all().delete()

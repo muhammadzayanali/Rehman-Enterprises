@@ -8,6 +8,15 @@ def absolute_url(request, file_field, max_width=LIST_WIDTH, pad=True):
     return optimized_url(request, file_field, max_width=max_width, pad=pad)
 
 
+def first_related(manager):
+    """First related row, using the prefetch cache.
+
+    ``.first()`` ignores that cache and opens a new database query.
+    """
+    related = list(manager.all())
+    return related[0] if related else None
+
+
 class CategorySerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
     product_count = serializers.IntegerField(read_only=True)
@@ -44,10 +53,8 @@ class CategorySerializer(serializers.ModelSerializer):
     def get_product(self, obj):
         product = next((item for item in obj.products.all() if item.is_active), None)
         if product is None:
-            product = obj.products.filter(is_active=True).first()
-        if product is None:
             return None
-        first_image = product.images.first() if hasattr(product, "images") else None
+        first_image = first_related(product.images)
         image = first_image.image if first_image else obj.image
         return {
             "id": product.id,
@@ -103,10 +110,18 @@ class ProductImageSerializer(serializers.ModelSerializer):
         return absolute_url(self.context.get("request"), obj.image, DETAIL_WIDTH)
 
 
+class CategoryBriefSerializer(serializers.ModelSerializer):
+    """id, name, and slug only. The shop never reads the nested catalog."""
+
+    class Meta:
+        model = Category
+        fields = ("id", "name", "slug")
+
+
 class ProductListSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
     in_stock = serializers.SerializerMethodField()
-    category = CategorySerializer(read_only=True)
+    category = CategoryBriefSerializer(read_only=True)
     category_id = serializers.PrimaryKeyRelatedField(
         source="category",
         queryset=Category.objects.all(),
@@ -145,10 +160,10 @@ class ProductListSerializer(serializers.ModelSerializer):
         return (obj.stock or 0) > 0
 
     def get_image_url(self, obj):
-        first = obj.images.first()
+        first = first_related(obj.images)
         if first:
             return absolute_url(self.context.get("request"), first.image, LIST_WIDTH)
-        if obj.category and obj.category.image:
+        if obj.category_id and obj.category.image:
             return absolute_url(self.context.get("request"), obj.category.image, LIST_WIDTH)
         return None
 
@@ -161,17 +176,18 @@ class ProductDetailSerializer(ProductListSerializer):
         fields = ProductListSerializer.Meta.fields + ("images", "related_products")
 
     def get_image_url(self, obj):
-        first = obj.images.first()
+        first = first_related(obj.images)
         if first:
             return absolute_url(self.context.get("request"), first.image, DETAIL_WIDTH, pad=False)
-        if obj.category and obj.category.image:
+        if obj.category_id and obj.category.image:
             return absolute_url(self.context.get("request"), obj.category.image, DETAIL_WIDTH, pad=False)
         return None
 
     def get_related_products(self, obj):
         related = (
-            Product.objects.filter(category=obj.category, is_active=True)
+            Product.objects.filter(category_id=obj.category_id, is_active=True)
             .exclude(pk=obj.pk)
+            .select_related("category")
             .prefetch_related("images")[:8]
         )
         return ProductListSerializer(related, many=True, context=self.context).data
